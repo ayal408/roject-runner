@@ -22,3 +22,20 @@ jobs:
           path: |
             ProjectRunner.exe
             README.txt
+
+  windows-smoke-test:
+    needs: build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ProjectRunner-Windows-x64
+      - name: Check saved groups, parallel launch, duplicate prevention, and stop
+        shell: pwsh
+        run: |
+          $process = Start-Process .\ProjectRunner.exe -ArgumentList '--self-test' -PassThru
+          if (-not $process.WaitForExit(45000)) {
+            $process.Kill()
+            throw 'Smoke test timed out'
+          }
+          if ($process.ExitCode -ne 0) { throw "Smoke test failed: $($process.ExitCode)" }
